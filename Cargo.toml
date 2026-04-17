@@ -1,0 +1,12 @@
+[package]
+name = "xray-panel"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+argon2 = "0.5.3"
+consoletools = "0.1.1"
+rand_core = { version = "0.6.4", features = ["getrandom"] }
+rusqlite = "0.39.0"
+serde_json = "1.0"
+uuid = {version = "1.23.1", features = ["v4", "serde"]}
