@@ -87,10 +87,24 @@ pub fn create_user(conn: &mut Connection, login: &str, password: &str) -> Result
     Ok(())
 }
 
-pub fn add_payment_date(conn: &Connection, uuid: &str, payment_date: &str) -> Result<()> {
+pub fn login(conn: &mut Connection, login: &str, password: &str) -> Result<bool> {
+    let mut stmt = conn.prepare("SELECT password_hash FROM user_auth WHERE login = ?1")?;
+    let mut rows = stmt.query(params![login])?;
+
+    if let Some(row) = rows.next()? {
+        let stored_hash: String = row.get(0)?;
+        Ok(verify_password(&stored_hash, password))
+    } else {
+        Ok(false)
+    }
+
+}
+
+
+pub fn add_payment_date(conn: &Connection, login: &str, payment_date: &str) -> Result<()> {
     let raw_dates: String = conn.query_row(
-        "SELECT payment_dates FROM user_data WHERE uuid = ?1",
-        params![uuid],
+        "SELECT payment_dates FROM user_data WHERE login = ?1",
+        params![login],
         |row| row.get(0),
     )?;
 
@@ -99,8 +113,8 @@ pub fn add_payment_date(conn: &Connection, uuid: &str, payment_date: &str) -> Re
     let serialized = serde_json::to_string(&dates).unwrap_or_else(|_| "[]".to_string());
 
     conn.execute(
-        "UPDATE user_data SET payment_dates = ?1 WHERE uuid = ?2",
-        params![serialized, uuid],
+        "UPDATE user_data SET payment_dates = ?1 WHERE login = ?2",
+        params![serialized, login],
     )?;
     Ok(())
 }
