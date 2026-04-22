@@ -43,13 +43,14 @@ fn main() {
         }
     });
 
+    let conn_for_login = Arc::clone(&conn);
     console.add_command("login", "login into account", move |args| {
         if args.len() != 2 {
             return CommandOutput::Error("Usage: login <login> <password>".to_string());
         }
         let login = &args[0];
         let password = &args[1];
-        let mut guard = match conn.lock() {
+        let mut guard = match conn_for_login.lock() {
             Ok(g) => g,
             Err(_) => {
                 return CommandOutput::Error("Database mutex lock failed".to_string());
@@ -59,6 +60,25 @@ fn main() {
             Ok(true) => CommandOutput::Success(format!("User '{}' logged in successfully", login)),
             Ok(false) => CommandOutput::Error("Invalid login or password".to_string()),
             Err(err) => CommandOutput::Error(format!("Login error: {}", err)),
+        }
+    });
+
+    let conn_for_addpaydate = Arc::clone(&conn);
+    console.add_command("addpaydate", "add new payment date to database", move |args| {
+        if args.len() != 2 {
+            return CommandOutput::Error("Usage: addpaydate <user_id> <pay_date>".to_string());
+        }
+        let user_id = &args[0];
+        let pay_date = &args[1];
+        let mut guard = match conn_for_addpaydate.lock() {
+            Ok(g) => g,
+            Err(_) => {
+                return CommandOutput::Error("Database mutex lock failed".to_string());
+            }
+        };
+        match core::add_payment_date(&mut guard, user_id, pay_date) {
+            Ok(()) => CommandOutput::Success(format!("Payment date '{}' added for user '{}'", pay_date, user_id)),
+            Err(err) => CommandOutput::Error(format!("Failed to add payment date: {}", err)),
         }
     });
 
